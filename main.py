@@ -29,6 +29,14 @@ def generate_data():
     df = pd.DataFrame(data)
     print(f"Синтетичні дані створено.\n, {df.shape[0]} записів та {df.shape[1]} стовпців.\n")
 
+    # Збереження даних у CSV, XLSX та JSON
+    # df.to_csv('files/synthetic_data.csv', index=False)
+    # df.to_excel('files/synthetic_data.xlsx', index=False)
+    # df.to_json('files/synthetic_data.json', orient='records', lines=True)
+
+
+
+
 
 def main():
     generate_data()
