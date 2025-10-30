@@ -33,13 +33,68 @@ def generate_data():
     # df.to_csv('files/synthetic_data.csv', index=False)
     # df.to_excel('files/synthetic_data.xlsx', index=False)
     # df.to_json('files/synthetic_data.json', orient='records', lines=True)
+    return df
 
+# ================= 2. Огляд даних (EDA)  =================
+def eda(df):
+    print("Перші 5 рядків даних:")
+    print(df.head(), "\n")
 
+    print("Описова статистика:")
+    print(df.describe(), "\n")
 
+    print("Інформація про дані:")
+    print(df.info(), "\n")
+
+    print("Розподіл цільової змінної 'churn':")
+    print(df['churn'].value_counts(), "\n")
+
+# ================= 3. Обробка даних =================
+def data_preprocessing(data):
+    # add lose value
+    data.loc[data.sample(50).index, 'income'] = np.nan  # додавання пропущених значень для демонстрації
+    data.loc[data.sample(30).index, 'credit_score'] = np.nan  # додавання пропущених значень для демонстрації
+    print(f"Пропущені значення у кожному стовпці:\n{data.isnull().sum()}\n")
+
+    # Заповнення пропущених значень медіаною для числових стовпців
+    data['income'].fillna(data['income'].median(), inplace=True)
+    data['credit_score'].fillna(data['credit_score'].median(), inplace=True)
+    print("Пропущені значення заповнено медіаною для числових стовпців.\n")
+    return data
+
+# ================= 4. Інженерія ознак =================
+def feature_engineering(data):
+    # Створення нових ознак
+    data['income_per_product'] = data['income'] / data['num_products'] # дохід на продукт
+    data['balance_to_income_ratio'] = data['account_balance'] / (data['income'] + 1)# співвідношення балансу до доходу і уникнення ділення на нуль
+    data['age_group'] = pd.cut(data['age'], bins=[0, 30, 50, 100], labels=['Young', 'Middle', 'Old']) # вікові групи
+    data['is_high_value'] = (data['account_balance'] > 50000).astype(int) # високий баланс
+
+    # Кодування категоріальних змінних
+    data = pd.get_dummies(data, columns=['country'], prefix='country', drop_first=True)
+    le = LabelEncoder()
+    data['age_group_encoded'] = le.fit_transform(data['age_group'])
+    print(f'Нові колонки після інженерії ознак: {data.columns.tolist()}\n')
+
+    return data
+
+# ================= 5. Підготовка даних для моделювання =================
+def prepare_data(data):
+    data_ml = data.drop(['customer_id', 'age_group'], axis=1) # видалення непотрібних стовпців
+
+    # Розділення на ознаки та цільову змінну
+    X = data_ml.drop('churn', axis=1)
+    y = data_ml['churn']
+
+    # Розділення на тренувальний та тестовий набори
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    return X_train, X_test, y_train, y_test
 
 
 def main():
-    generate_data()
+    # data = generate_data()
+    # eda(data)
+    data = feature_engineering(data_preprocessing(generate_data()))
 
 if __name__ == "__main__":
     main()
