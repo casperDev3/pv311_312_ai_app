@@ -57,8 +57,8 @@ def data_preprocessing(data):
     print(f"Пропущені значення у кожному стовпці:\n{data.isnull().sum()}\n")
 
     # Заповнення пропущених значень медіаною для числових стовпців
-    data['income'].fillna(data['income'].median(), inplace=True)
-    data['credit_score'].fillna(data['credit_score'].median(), inplace=True)
+    data['income'] = data['income'].fillna(data['income'].median())
+    data['credit_score'] = data['credit_score'].fillna(data['credit_score'].median())
     print("Пропущені значення заповнено медіаною для числових стовпців.\n")
     return data
 
@@ -92,9 +92,12 @@ def prepare_data(data):
 
 
 def main():
-    # data = generate_data()
-    # eda(data)
-    data = feature_engineering(data_preprocessing(generate_data()))
+    df = generate_data()
+    # eda(df)
+    df = data_preprocessing(df)
+    df = feature_engineering(df)
+    X_train, X_test, y_train, y_test = prepare_data(df)
+
 
 if __name__ == "__main__":
     main()
