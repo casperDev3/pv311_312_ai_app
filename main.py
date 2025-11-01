@@ -1,11 +1,22 @@
 import pandas as pd
 import numpy as np
+import seaborn as sns # імпортуємо seaborn для візуалізації градієнтів
+from IPython.core.display_functions import display
+from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split, cross_val_score # імпортуємо модулі для розділення даних та крос-валідації
 from sklearn.preprocessing import StandardScaler, LabelEncoder # імпортуємо модулі для масштабування та кодування міток
 from sklearn.linear_model import LogisticRegression # імпортуємо логістичну регресію
 from sklearn.tree import DecisionTreeClassifier # імпортуємо класифікатор дерев рішень
 from sklearn.ensemble import RandomForestClassifier # імпортуємо випадковий ліс
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report # імпортуємо метрики для оцінки моделей: точність, матриця плутанини, звіт класифікації
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    classification_report,
+    mean_squared_error,
+    mean_absolute_error,
+    r2_score,
+    roc_auc_score
+) # імпортуємо метрики для оцінки моделей: точність, матриця плутанини, звіт класифікації
 
 
 def generate_data():
@@ -91,12 +102,68 @@ def prepare_data(data):
     return X_train, X_test, y_train, y_test
 
 
+# ================= Тренування моделей та оцінка =================
+def evaluate_models(X_train, X_test, y_train, y_test):
+    models = {
+        'Logistic Regression': LogisticRegression(max_iter=1000),
+        'Decision Tree': DecisionTreeClassifier(random_state=42),
+        'Random Forest': RandomForestClassifier(random_state=42, n_estimators=100)
+    }
+    results = []
+
+    for name, model in models.items():
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+
+        acc = accuracy_score(y_test, y_pred)
+        mse = mean_squared_error(y_test, y_pred)
+        mae = mean_absolute_error(y_test, y_pred)
+        r2 = r2_score(y_test, y_pred)
+        roc_auc = roc_auc_score(y_test, y_pred)
+
+        results.append({
+            'Model': name,
+            'Accuracy': acc,
+            'MSE': mse,
+            'MAE': mae,
+            'R2 Score': r2,
+            'ROC AUC': roc_auc
+        })
+
+        print("=" * 50)
+        print(f"Model: {name}")
+        print(f"Accuracy: {acc:.4f}")
+        print(f"MSE: {mse:.4f}")
+        print(f"MAE: {mae:.4f}")
+        print(f"R2 Score: {r2:.4f}")
+        print(f"ROC AUC: {roc_auc:.4f}")
+
+        # Виведення матриці плутанини та звіту класифікації
+        plt.figure(figsize=(10, 6))
+        sns.heatmap(confusion_matrix(y_test, y_pred), annot=True, fmt='d', cmap='Blues')
+        plt.title('Confusion Matrix for ' + name)
+        plt.xlabel('Predicted')
+        plt.ylabel('Actual')
+        plt.show()
+
+    results_df  = pd.DataFrame(results)
+    print("\nПорівняння моделей:")
+    display(results_df)
+
+    # Візуалізація порівняння моделей
+    results_df.set_index("Model")[["Accuracy"]].plot(kind='bar', figsize=(7, 4))
+    plt.title('Model Comparison')
+    plt.ylabel('Score')
+    plt.show()
+
+
 def main():
     df = generate_data()
     # eda(df)
     df = data_preprocessing(df)
     df = feature_engineering(df)
     X_train, X_test, y_train, y_test = prepare_data(df)
+    evaluate_models(X_train, X_test, y_train, y_test)
 
 
 if __name__ == "__main__":
