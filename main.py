@@ -53,6 +53,8 @@ class FaceRecognitionSystem:
 
         print("🧠 Завантаження моделі YOLOv8n для детекції людей...")
         self.person_detector = YOLO("yolov8n.pt")
+
+        # TODO: перевірити чи є GPU і використовувати його на Windows
         self.person_detector.to("cuda" if cv2.cuda.getCudaEnabledDeviceCount() > 0 else "cpu")
 
         self.frame_count = 0
