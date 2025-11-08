@@ -87,7 +87,7 @@ class FaceRecognitionSystem:
         print(f"✅ Завантажено {total_photos} фото облич")
         return total_photos > 0
 
-    def process_frame(self, frame, face_interval=3, scale_factor=0.25):
+    def process_frame(self, frame, face_interval=1, scale_factor=0.25):
         """Фонова обробка кадру — виконується в окремому потоці"""
         people_boxes = []
         phone_boxes = []
@@ -162,10 +162,15 @@ class FaceRecognitionSystem:
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 200, 255), 2)
 
         for (top, right, bottom, left), (name, confidence) in zip(face_locations, face_names):
-            color = (0, 255, 0) if name != "Unknown" else (0, 0, 255)
-            cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
-            cv2.putText(frame, f"{name} ({confidence:.1f}%)", (left + 4, bottom - 6),
-                        cv2.FONT_HERSHEY_DUPLEX, 0.55, (255, 255, 255), 1)
+            # Якщо координати обличчя виходять в координати телефона то підсвчуємо червоним рамку
+            face_box_color = (0, 255, 0)
+            for (px1, py1, px2, py2) in self.phone_boxes:
+                if left < px2 and right > px1 and top < py2 and bottom > py1:
+                    face_box_color = (0, 0, 255)
+                    break
+            cv2.rectangle(frame, (left, top), (right, bottom), face_box_color, 2)
+            cv2.putText(frame, f"{name} ({confidence:.1f}%)", (left, top - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, face_box_color, 2)
 
 
 def run_face_recognition(camera_id=0, photos_folder="photos"):
@@ -224,7 +229,7 @@ def run_face_recognition(camera_id=0, photos_folder="photos"):
 
 if __name__ == "__main__":
     try:
-        run_face_recognition(camera_id=4, photos_folder="photos")
+        run_face_recognition(camera_id=0, photos_folder="photos")
     except Exception as e:
         print("❌ Помилка:", e)
         traceback.print_exc()
