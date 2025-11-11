@@ -57,7 +57,7 @@ def load_model():
         local_files_only=local,
         use_safetensors=True,
         low_cpu_mem_usage=True,
-        variant="fp16" if device == "cuda" else "fp32"
+        variant="fp16" if device == "cuda" else "fp16"
     ).to(device)
 
     if device == "cuda":
@@ -65,26 +65,30 @@ def load_model():
 
     return pipe
 
-def generate_image(pipe, prompt, out_paths="generated_images/gen_{int(time.time())}.png", steps=30, guidance= 7.5):
+def generate_image(pipe, prompt, out_paths=f"generated_images/", file_name=f"british_gen_{int(time.time())}", file_type=".png", steps=30, guidance= 7.5):
     print("=" * 20)
     print(f"Generating image for prompt: {prompt}")
 
-    image = pipe(prompt, num_inference_steps=steps, guidance_scale=guidance).images[0] #TODO: check same temp in JS
-    image.save(out_paths)
+    # os.makedirs(os.path.dirname("./generated_images"), exist_ok=True)
 
-    print(f"Image saved to {out_paths}")
+    image = pipe(prompt, num_inference_steps=steps, guidance_scale=guidance).images[0] #TODO: check same temp in JS
+    image.save(f"{out_paths}{file_name}_{steps}{file_type}")
+
+    print(f"Image saved to: {out_paths}{file_name}_{steps}{file_type}")
     return image
 
 
 def main():
-    prompt = "Red Cat in the style of Van Gogh on Moon"
+    prompt = """
+    british short hair cat sleeping in sunlight on wooden floor, warm tone, peaceful cozy atmosphere, cinematic detail,32k
+    """
     try:
         pipe = load_model()
-        generate_image(pipe, prompt, steps=20, guidance=7.5)
+        generate_image(pipe, prompt, steps=55, guidance=7.5)
     except Exception  as e:
         print(f"Model loading failed: {e}")
 
 
 if __name__ == "__main__":
-    download_model()
-    # main()
+    # download_model()
+    main()
