@@ -1,3 +1,4 @@
+import ssl
 import numpy as np
 import pickle
 import gzip
@@ -62,6 +63,7 @@ class NeuralNetwork:
 
     def train(self, X, Y, epochs=1000, batch_size=32):
         losses = []
+        accuracies = []
         m = X.shape[1]
 
         for epoch in range(epochs):
@@ -75,15 +77,16 @@ class NeuralNetwork:
                 Y_hat = self.forward(X_batch)
                 self.backward(X_batch, Y_batch, Y_hat)
 
-            # Обчислення втрат кожні 100 епох
-            if epoch % 100 == 0:
+            # Обчислення втрат кожні 30 епох
+            if epoch % 30 == 0:
                 Y_hat_full = self.forward(X)
                 loss = self.compute_loss(Y, Y_hat_full)
-                losses.append(loss)
                 accuracy = self.accuracy(X, Y)
+                losses.append(loss)
+                accuracies.append(accuracy)
                 print(f"Епоха {epoch}, Втрати: {loss:.4f}, Точність: {accuracy:.4f}")
 
-        return losses
+        return losses, accuracies
 
     def predict(self, X):
         Y_hat = self.forward(X)
@@ -107,6 +110,8 @@ class DigitRecognizer:
 
         if not os.path.exists(filename):
             print("Завантаження MNIST даних...")
+            # Вимкнути перевірку SSL
+            ssl._create_default_https_context = ssl._create_unverified_context
             urllib.request.urlretrieve(url, filename)
 
         with gzip.open(filename, 'rb') as f:
@@ -144,7 +149,7 @@ class DigitRecognizer:
         )
 
         print("Початок навчання...")
-        losses = self.model.train(X_train, Y_train, epochs=epochs)
+        losses, accuracies = self.model.train(X_train, Y_train, epochs=epochs)
 
         # Оцінка на тестових даних
         test_accuracy = self.model.accuracy(X_test, Y_test)
@@ -152,18 +157,25 @@ class DigitRecognizer:
 
         self.is_trained = True
 
-        # Графік втрат
-        plt.figure(figsize=(10, 4))
+        # Графік втрат та точності
+        plt.figure(figsize=(12, 4))
 
+        # Графік втрат
         plt.subplot(1, 2, 1)
-        plt.plot(range(0, epochs, 100), losses)
+        epochs_recorded = range(0, epochs, 30)
+        plt.plot(epochs_recorded, losses)
         plt.title('Графік втрат під час навчання')
         plt.xlabel('Епоха')
         plt.ylabel('Втрати')
+        plt.grid(True)
 
-        # Перевірка на декількох тестових прикладах
+        # Графік точності
         plt.subplot(1, 2, 2)
-        self.visualize_predictions(X_test, Y_test)
+        plt.plot(epochs_recorded, accuracies)
+        plt.title('Графік точності під час навчання')
+        plt.xlabel('Епоха')
+        plt.ylabel('Точність')
+        plt.grid(True)
 
         plt.tight_layout()
         plt.show()
@@ -174,6 +186,7 @@ class DigitRecognizer:
         """Візуалізація прогнозів"""
         indices = np.random.choice(X_test.shape[1], num_examples, replace=False)
 
+        plt.figure(figsize=(12, 3))
         for i, idx in enumerate(indices):
             x = X_test[:, idx:idx + 1]
             true_label = np.argmax(Y_test[:, idx])
@@ -183,6 +196,9 @@ class DigitRecognizer:
             plt.imshow(x.reshape(28, 28), cmap='gray')
             plt.title(f'True: {true_label}\nPred: {prediction}')
             plt.axis('off')
+
+        plt.tight_layout()
+        plt.show()
 
     def predict_digit(self, image_path):
         """Передбачення цифри з зображення"""
@@ -276,7 +292,7 @@ def main():
     # Навчання моделі (закоментуйте після першого запуску)
     accuracy = recognizer.create_and_train_model(
         hidden_units=128,
-        epochs=500,
+        epochs=60,  # Зменшено для швидшого тестування
         learning_rate=0.1
     )
 
@@ -285,7 +301,7 @@ def main():
 
     print("\n=== ТЕСТУВАННЯ НА ВЛАСНИХ ЗОБРАЖЕННЯХ ===")
     # Створення тестового зображення
-    test_digit = 7
+    test_digit = 1
     test_image_path = create_test_image(test_digit)
 
     # Розпізнавання
