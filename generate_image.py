@@ -77,6 +77,12 @@ def generate_image(pipe, prompt, out_paths=f"generated_images/", file_name=f"bri
     print(f"Image saved to: {out_paths}{file_name}_{steps}{file_type}")
     return image
 
+def gen_image(prompt: str):
+    try:
+        pipe = load_model()
+        generate_image(pipe, prompt, steps=2, guidance=7.5)
+    except Exception as e:
+        print(f"Model loading failed: {e}")
 
 def main():
     prompt = """
@@ -84,7 +90,7 @@ def main():
     """
     try:
         pipe = load_model()
-        generate_image(pipe, prompt, steps=55, guidance=7.5)
+        generate_image(pipe, prompt, steps=2, guidance=7.5)
     except Exception  as e:
         print(f"Model loading failed: {e}")
 
