@@ -20,25 +20,35 @@ class Post:
     content: str
     user_id: int
 
+
 @strawberry.type()
 class Meta:
     total: int
+
 
 @strawberry.type()
 class ResponsePosts:
     status: int
     success: bool
     data: List[Post]
-    # meta: Meta
-    total: int
+    meta: Meta
+
 
 @strawberry.type()
 class ResponsePost:
     status: int
     success: bool
     data: Post
-    # meta: Meta
-    total: int
+    meta: Meta
+
+# @strawberry.type()
+# class ResponseUser:
+#     success: bool
+#     status: int
+#     data: User
+#     posts: List[Post]
+#     meta: Meta
+#
 
 
 # Фейкові дані
@@ -62,42 +72,73 @@ class Query:
         return "Server works good!"
 
     @strawberry.field()
-    def posts(self)-> ResponsePosts:
+    def posts(self) -> ResponsePosts:
         return ResponsePosts(
             status=200,
             success=True,
             data=posts_db,
-            total=len(posts_db)
+            meta=Meta(total=len(posts_db))
         )
 
     @strawberry.field()
-    def one_post(self, id: int)->ResponsePost:
+    def one_post(self, id: int) -> ResponsePost:
         return ResponsePost(
             success=True,
             status=200,
             data=posts_db[id - 1],
-            total=len(posts_db)
+            meta=Meta(total=len(posts_db))
         )
+
 
 @strawberry.type
 class Mutation:
     @strawberry.mutation()
-    def create_post(self, title: str) -> Post:
+    def create_post(self, title: str) -> ResponsePost:
         new_id = len(posts_db) + 1
         new_post = Post(id=new_id, title=title, content="", user_id=1)
         posts_db.append(new_post)
-        return new_post
+        return ResponsePost(
+            success=True,
+            status=201,
+            data=new_post,
+            meta=Meta(total=len(posts_db))
+        )
+
+    @strawberry.mutation()
+    def update_post(self, post_id: int, title: Optional[str] = None, content: Optional[str] = None) -> ResponsePost:
+        posts_db[post_id - 1] = Post(
+            id=post_id,
+            title=title if title else posts_db[post_id - 1].title,
+            content=content if content else posts_db[post_id - 1].content,
+            user_id=posts_db[post_id - 1].user_id
+        )
+
+        return ResponsePost(
+            status=200,
+            success=True,
+            data=posts_db[post_id - 1],
+            meta=Meta(total=len(posts_db))
+        )
+
+    @strawberry.mutation()
+    def delete_post(self, post_id: int) -> bool:
+        global posts_db
+        posts_db = [post for post in posts_db if post.id != post_id]
+        return True
+
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)
 app = FastAPI(title="Test GraphQL")
 
 app.include_router(GraphQLRouter(schema), prefix="/graphql")
 
+
 @app.get("/rest/health")
 def check_health():
     return {
         "message": "Server works good! REST API"
     }
+
 
 @app.get("/rest/posts/")
 def get_all_posts():
@@ -110,17 +151,18 @@ def get_all_posts():
         }
     }
 
+
 @app.get("/rest/posts/{id}")
-def get_all_posts(requests):
-    # id = requests
+def get_all_posts(id: int):
     return {
         "status": 200,
         "success": True,
-        "data": posts_db,
+        "data": posts_db[id - 1],
         "meta": {
             "total": len(posts_db)
         }
     }
+
 
 @app.get("/")
 def root():
