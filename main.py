@@ -7,6 +7,14 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from typing import Optional, Any
 
+# custom
+from models import (
+    HealthResponse,
+    RegisterResponse,
+    UserRegister,
+)
+import models
+
 # config
 SECRET_KEY = "your-secret-key-change-in-production"  # Змініть у продакшені!
 ALGORITHM = "HS256"
@@ -18,13 +26,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 fake_users_db = {}
 security = HTTPBearer()
 
-
-# models
-class HealthResponse(BaseModel):
-    status: int
-    success: bool
-    data: str
-    last_check: Any
+print(models.__all__)
 
 
 # default endpoints
@@ -36,6 +38,7 @@ async def root():
         data="It's home page!",
         last_check=datetime.utcnow()
     )
+
 
 @app.get('/api/health/', response_model=HealthResponse, status_code=200)
 async def health():
