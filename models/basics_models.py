@@ -1,10 +1,11 @@
 from typing import Optional, Any
 from pydantic import BaseModel, EmailStr, Field
 
+
 # models__collections
 class User(BaseModel):
     username: str
-    mail: str
+    email: EmailStr
     created_at: Any
     updated_at: Any
 
@@ -20,7 +21,7 @@ class AuthUser(BaseModel):
 class UserRegister(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
-    password: str = Field(..., max_length=6)
+    password: str = Field(..., min_length=6)
 
 
 class UserLogin(BaseModel):
@@ -46,3 +47,8 @@ class LoginResponse(BaseModel):
     status: int
     success: bool
     data: AuthUser
+
+class UserResponse(BaseModel):
+    status: int
+    success: bool
+    data: User

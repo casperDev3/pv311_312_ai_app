@@ -5,13 +5,14 @@ from .basics_models import (
     UserLogin,
     HealthResponse,
     RegisterResponse,
-    LoginResponse
+    LoginResponse,
+    UserResponse
 )
 
 __all__ = {
     "basics_models": {
         "collections": ["User", "AuthUser"],
         "requests": ["UserRegister", "UserLogin"],
-        "responses": ["HealthResponse", "RegisterResponse", "LoginResponse"]
+        "responses": ["HealthResponse", "RegisterResponse", "LoginResponse", "UserResponse"]
     }
 }
