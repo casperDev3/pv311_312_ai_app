@@ -13,20 +13,17 @@ from models import (
     RegisterResponse,
     UserRegister,
 )
-import models
 
-# config
-SECRET_KEY = "your-secret-key-change-in-production"  # Змініть у продакшені!
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+from utils import (
+    get_current_user,
+    get_password_hash,
+    verify_password,
+    verify_token,
+    create_access_token
+)
 
 # init
 app = FastAPI(title="FastApi JWT", version="0.0.1")
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-fake_users_db = {}
-security = HTTPBearer()
-
-print(models.__all__)
 
 
 # default endpoints
