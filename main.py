@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
@@ -74,6 +74,13 @@ def register():
     )
     db.session.add(new_user)
     db.session.commit()
+    created_user_id = User.query.filter_by(username=data['username']).first().id
+
+    token = jwt.encode({
+        'user_id': created_user_id,
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    }, app.config['SECRET_KEY'], algorithm='HS256')
+
     return jsonify({
         "status": 201,
         "success": True,
@@ -81,7 +88,8 @@ def register():
         "data": {
             "username": new_user.username,
             "email": new_user.email,
-            "role": new_user.role
+            "role": new_user.role,
+            "token": token
         }
     }), 201
 
@@ -133,6 +141,120 @@ def get_users(current_user):
         "success": True,
         "data": output
     }), 200
+
+
+@app.route('/api/users/<int:user_id>', methods=['GET'])
+@token_required
+def get_user(current_user, user_id):
+    user = User.query.filter_by(id=user_id).first()
+    if not user:
+        return jsonify({
+            "status": 404,
+            "success": False,
+            "message": "User not found"
+        }), 404
+
+    if current_user.id != user.id and current_user.role != 'admin':
+        return jsonify({
+            "status": 403,
+            "success": False,
+            "message": "You do not have permission to view this user"
+        }), 403
+
+    user_data = {
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'role': user.role
+    }
+
+    return jsonify({
+        "status": 200,
+        "success": True,
+        "data": user_data
+    }), 200
+
+
+@app.route('/api/users/<int:user_id>', methods=['PUT'])
+@token_required
+def update_user(current_user, user_id):
+    user = User.query.filter_by(id=user_id).first()
+    if not user:
+        return jsonify({
+            "status": 404,
+            "success": False,
+            "message": "User not found"
+        }), 404
+
+    if current_user.id != user.id and current_user.role != 'admin':
+        return jsonify({
+            "status": 403,
+            "success": False,
+            "message": "You do not have permission to edit this user"
+        }), 403
+
+    data = request.get_json()
+    if 'username' in data:
+        user.username = data['username']
+    if 'email' in data:
+        user.email = data['email']
+        # if 'password' in data:
+        #     user.password = generate_password_hash(data['password'])
+
+    if 'role' in data and current_user.role == 'admin':
+        user.role = data['role']
+    else:
+        return jsonify({
+            "status": 403,
+            "success": False,
+            "message": "Only admin can change user roles"
+        }), 403
+
+    db.session.commit()
+    return jsonify({
+        "status": 200,
+        "success": True,
+        "message": "User updated successfully",
+        "data": {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'role': user.role
+        }
+    }), 200
+
+
+@app.route('/api/users/<int:user_id>', methods=['DELETE'])
+@token_required
+def delete_user(current_user, user_id):
+    user = User.query.filter_by(id=user_id).first()
+    if not user:
+        return jsonify({
+            "status": 404,
+            "success": False,
+            "message": "User not found"
+        }), 404
+
+    if current_user.id != user.id and current_user.role != 'admin':
+        return jsonify({
+            "status": 403,
+            "success": False,
+            "message": "You do not have permission to delete this user"
+        }), 403
+
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({
+        "status": 200,
+        "success": True,
+        "message": "User deleted successfully"
+    }), 200
+
+
+# default routes
+@app.route('/')
+def index():
+    return render_template("index.html", title="User Management API")
 
 
 @app.route('/api/health')
